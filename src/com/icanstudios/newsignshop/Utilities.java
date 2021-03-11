@@ -1,4 +1,4 @@
-package com.icanstudios.printbreak;
+package com.icanstudios.newsignshop;
 
 import org.bukkit.entity.Player;
 import org.bukkit.OfflinePlayer;

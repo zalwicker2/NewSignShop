@@ -1,26 +1,13 @@
-package com.icanstudios.printbreak;
+package com.icanstudios.newsignshop;
 
 import java.io.File;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.SignChangeEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.milkbowl.vault.economy.Economy;
@@ -30,6 +17,7 @@ public class Main extends JavaPlugin implements Listener {
 	private static Economy econ;
 	private static YamlConfiguration yml;
 	private static File shopFile;
+	
 	@Override
 	public void onEnable() {
 		getServer().getPluginManager().registerEvents(this,  this);
@@ -38,7 +26,11 @@ public class Main extends JavaPlugin implements Listener {
 		// File Management
 		this.getDataFolder().mkdirs();
 		
-		econ = Bukkit.getServer().getServicesManager().getRegistration(Economy.class).getProvider();
+		if (!setupEconomy() ) {
+            System.out.println(String.format("[%s] - Disabled due to no Vault dependency found!", getDescription().getName()));
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
 		System.out.println("Magma's Sign Shop started.");
 	}
 	
@@ -85,10 +77,17 @@ public class Main extends JavaPlugin implements Listener {
 		return shopFile;
 	}
 	
-	public void Trade(Player plr, Location spot) {
-		if(shops.containsKey(spot)) {
-			Shop access = shops.get(spot);
-			
-		}
-	}
+	private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+        	System.out.println("no vault");
+            return false;
+        }
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+        	System.out.println("no rsp");
+            return false;
+        }
+        econ = rsp.getProvider();
+        return econ != null;
+    }
 }

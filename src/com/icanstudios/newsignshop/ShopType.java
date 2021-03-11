@@ -1,4 +1,4 @@
-package com.icanstudios.printbreak;
+package com.icanstudios.newsignshop;
 
 public enum ShopType {
 	BUY, 
