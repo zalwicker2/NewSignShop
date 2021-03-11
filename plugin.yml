@@ -1,0 +1,5 @@
+main: com.icanstudios.NewSignShop.Main
+name: NewSignShop
+version: 1.0
+author: me
+api-version: 1.14
