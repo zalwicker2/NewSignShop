@@ -3,4 +3,20 @@ name: NewSignShop
 version: 1.0
 author: me
 api-version: 1.16
+permissions:
+ newsignshop.*:
+  description: Gives access to all permissions
+  children:
+   newsignshop.infinteshopcreation: true
+   newsignshop.playershopcreation: true
+   newsignshop.destroyany: true
+ newsignshop.infiniteshopcreation:
+  description: Users with this permission can create infinite shops
+  default: op
+ newsignshop.playershopcreation:
+  description: Users with this permission can create finite shops
+  default: true
+ newsignshop.destroyany:
+  description: Users with this permission can destroy any shop
+  default: op
 depend: [Vault]

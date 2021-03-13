@@ -12,6 +12,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
@@ -22,17 +23,19 @@ import org.bukkit.plugin.Plugin;
 
 import net.milkbowl.vault.economy.Economy;
 
-public class SignManager {
+public class SignManager implements Listener {
 	private Plugin creator;
 	private HashMap<Location, Shop> shops;
 	private Economy econ;
 	private YamlConfiguration yml;
+	private Material destructo = Material.GOLDEN_AXE;
 	private File shopFile;
 	
-	public SignManager(Plugin creator, HashMap<Location, Shop> shops, Economy econ) {
+	public SignManager(Plugin creator, HashMap<Location, Shop> shops, Economy econ, Material breakableItem) {
 		this.shops = shops;
 		this.econ = econ;
 		this.creator = creator;
+		this.destructo = breakableItem;
 		econ = Main.getEconomy();
 		yml = Main.getYaml();
 		shopFile = Main.getShopFile();
@@ -42,9 +45,7 @@ public class SignManager {
 	public void onSignChange(SignChangeEvent b) {
 		Block block = b.getBlock();
 		String mat = block.getBlockData().getMaterial().toString();
-		if(!b.getPlayer().isOp()) {
-			return;
-		}
+		System.out.println("new sign");
 		if(!shops.containsKey(block.getLocation())) {
 			if(mat.length() > 9) {
 				if(mat.substring(mat.length() - 9, mat.length()).equals("WALL_SIGN")) {
@@ -74,7 +75,8 @@ public class SignManager {
 					if(trans.getType() == Material.AIR) {
 						return;
 					}
-					shops.put(block.getLocation(), new Shop(type, trans, cost));
+					Shop newShop = new Shop(block.getLocation(), type, trans, cost);
+					shops.put(block.getLocation(), newShop);
 					sign.setLine(0, "[" + ChatColor.DARK_GREEN + (type == ShopType.BUY ? "Buy" : "Sell") + ChatColor.BLACK + "]");
 					sign.setLine(1, "" + trans.getAmount());
 					if(b.getLine(2).equals("")) {
@@ -84,18 +86,16 @@ public class SignManager {
 					}
 					sign.setLine(3, "$" + ChatColor.GREEN + cost);
 					sign.update();
-					for(HashMap.Entry<Location, Shop> stuff : shops.entrySet()) {
-						Location s = stuff.getKey();
-						Shop v = stuff.getValue();
-						yml.set(s.getWorld().getName() + "," + s.getBlockX() + "," + s.getBlockY() + "," + s.getBlockZ(), v.toFormattedString());
-					}
+					Location loc = block.getLocation();
 					try {
+						yml.set(loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ(), newShop.toFormattedString());
 						yml.save(shopFile);
 					} catch(Exception e) {
 						System.out.println(e);
 					}
-					b.getPlayer().sendMessage(ChatColor.GREEN + "Shop successfully created. Use a gold axe to remove it.");
 					block.setMetadata("isShop", new FixedMetadataValue(creator, Boolean.valueOf(true)));
+					block.setMetadata("owner", new FixedMetadataValue(creator, b.getPlayer().getUniqueId()));
+					b.getPlayer().sendMessage(ChatColor.GREEN + "Shop successfully created. Use a gold axe to remove it.");
 					b.setCancelled(true);
 				}
 			}
@@ -120,7 +120,7 @@ public class SignManager {
 			}
 		}
 		if(shops.containsKey(block.getLocation())) {
-			if(b.getPlayer().getInventory().getItemInMainHand().getType().toString().equals("GOLDEN_AXE") && b.getPlayer().isOp()) {
+			if(b.getPlayer().getInventory().getItemInMainHand().getType().equals(destructo) && b.getPlayer().hasPermission("newsignshop.destroyany")) {
 				Location s = block.getLocation();
 				shops.remove(s);
 				yml.set(s.getWorld().getName() + "," + s.getBlockX() + "," + s.getBlockY() + "," + s.getBlockZ(), null);
@@ -139,7 +139,7 @@ public class SignManager {
 	public void onBlockClicked(PlayerInteractEvent e) {
 		if(e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			Block block = e.getClickedBlock();
-			if(block.getMetadata("isShop").get(0).asBoolean() == true) {
+			if(block.getMetadata("isShop").size() > 0 && block.getMetadata("isShop").get(0).asBoolean() == true) {
 				shops.get(block.getLocation()).attemptPurchase(e.getPlayer());
 			}
 		}
